@@ -1,0 +1,45 @@
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy import stats
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
+
+marketing_df = pd.read_csv("marketing_data.csv")
+marketing_df.dropna(inplace=True)
+
+plt.figure(figsize=(10, 6))
+sns.histplot(marketing_df['ConversionRate'], kde=True)
+plt.title("Distribution of Conversion Rates")
+plt.xlabel("Conversion Rate")
+plt.ylabel("Frequency")
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.boxplot(x='Campaign', y='ConversionRate', data=marketing_df)
+plt.title("Conversion Rates by Campaign")
+plt.xlabel("Campaign")
+plt.ylabel("Conversion Rate")
+plt.show()
+
+campaign_a = marketing_df[marketing_df['Campaign'] == 'A']['ConversionRate']
+campaign_b = marketing_df[marketing_df['Campaign'] == 'B']['ConversionRate']
+ttest_result = stats.ttest_ind(campaign_a, campaign_b)
+print("A/B Test p-value:", ttest_result.pvalue)
+
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x='AdSpend', y='Conversions', hue='Campaign', data=marketing_df)
+plt.title("Ad Spend vs Conversions")
+plt.xlabel("Ad Spend")
+plt.ylabel("Conversions")
+plt.show()
+
+X_marketing = marketing_df[['AdSpend', 'Clicks']]
+y_marketing = marketing_df['Conversions']
+marketing_model = LinearRegression()
+marketing_model.fit(X_marketing, y_marketing)
+y_pred = marketing_model.predict(X_marketing)
+r2 = r2_score(y_marketing, y_pred)
+print("Regression Coefficients:", marketing_model.coef_)
+print("Intercept:", marketing_model.intercept_)
+print("R-squared:", r2)
