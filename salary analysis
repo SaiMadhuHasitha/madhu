@@ -1,0 +1,89 @@
+import pandas as pd
+import scipy.stats as stats
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+file_path = "salary_dataset.csv"
+df = pd.read_csv(file_path)
+
+df.columns = df.columns.str.strip().str.lower()
+
+df = df.drop_duplicates()
+
+df = df.fillna(df.median(numeric_only=True))
+
+for col in df.select_dtypes(include=["object"]).columns:
+    df[col] = df[col].fillna(df[col].mode()[0])
+
+df.to_csv(file_path, index=False)
+
+print(df.head())
+print(df.describe())
+print(df.nunique())
+
+plt.figure(figsize=(8,5))
+sns.histplot(df["salary"], bins=30, kde=True, color="skyblue")
+plt.xlabel("Salary")
+plt.ylabel("Frequency")
+plt.show()
+
+plt.figure(figsize=(8,5))
+sns.scatterplot(x=df["years of experience"], y=df["salary"], color="darkorange")
+plt.xlabel("Years of Experience")
+plt.ylabel("Salary")
+plt.show()
+
+if "education level" in df.columns:
+    df_grouped = df.groupby("education level")["salary"].mean().reset_index()
+    plt.figure(figsize=(8,5))
+    sns.barplot(x="education level", y="salary", data=df_grouped, palette="viridis")
+    plt.xlabel("Education Level")
+    plt.ylabel("Average Salary")
+    plt.show()
+
+numeric_df = df.select_dtypes(include=['number'])
+if "salary" in numeric_df.columns:
+    print(numeric_df.corr()["salary"])
+
+    plt.figure(figsize=(8,5))
+    sns.heatmap(numeric_df.corr(), annot=True, cmap="coolwarm", fmt=".2f")
+    plt.show()
+
+if "education level" in df.columns:
+    unique_levels = df["education level"].nunique()
+    if unique_levels == 2:
+        group1, group2 = df["education level"].unique()
+        salaries_group1 = df[df["education level"] == group1]["salary"]
+        salaries_group2 = df[df["education level"] == group2]["salary"]
+
+        t_stat, p_value = stats.ttest_ind(salaries_group1, salaries_group2, equal_var=False)
+        print(f"T-statistic: {t_stat}, P-value: {p_value}")
+
+if "education level" in df.columns and df["education level"].nunique() > 2:
+    education_groups = [df[df["education level"] == level]["salary"] for level in df["education level"].unique()]
+    f_stat, p_value = stats.f_oneway(*education_groups)
+    print(f"F-statistic: {f_stat}, P-value: {p_value}")
+
+if "years of experience" in df.columns:
+    df["experience_groups"] = pd.qcut(df["years of experience"], q=4, labels=["Low", "Medium", "High", "Very High"])
+    experience_groups = [df[df["experience_groups"] == level]["salary"] for level in df["experience_groups"].unique()]
+    f_stat, p_value = stats.f_oneway(*experience_groups)
+    print(f"F-statistic: {f_stat}, P-value: {p_value}")
+
+if "location" in df.columns:
+    df_grouped = df.groupby("location")["salary"].mean().reset_index()
+    plt.figure(figsize=(8, 5))
+    sns.barplot(x="location", y="salary", data=df_grouped, palette="coolwarm")
+    plt.xlabel("Location")
+    plt.ylabel("Average Salary")
+    plt.xticks(rotation=45)
+    plt.show()
+
+if "job title" in df.columns:
+    df_grouped = df.groupby("job title")["salary"].mean().reset_index()
+    plt.figure(figsize=(8, 5))
+    sns.barplot(x="job title", y="salary", data=df_grouped, palette="magma")
+    plt.xlabel("Job Title")
+    plt.ylabel("Average Salary")
+    plt.xticks(rotation=90)
+    plt.show()
